@@ -380,7 +380,7 @@ export default function Home() {
         }
         return
       }
-      const handle = await (window as any).showDirectoryPicker()
+      const handle = await (window as any).showDirectoryPicker({ mode: 'read' })
       console.log("[selectDirectory] handle obtained", handle)
       await saveHandle(handle)
       setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparandoâ€¦' })
@@ -407,6 +407,11 @@ export default function Home() {
       selectingRef.current = false
     }
   }
+
+  // On mobile, never open embedded preview
+  useEffect(() => {
+    if (isMobile && viewerOpen) setViewerOpen(false)
+  }, [isMobile, viewerOpen])
 
   useEffect(() => {
     if (step === 1) {

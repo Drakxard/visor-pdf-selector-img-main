@@ -2730,10 +2730,11 @@
               const res = req.result;
               if (res && res.handle) {
                 try {
-                  const perm = await res.handle.queryPermission({ mode: 'readwrite' });
+                  const mode = isCoarse ? 'read' : 'readwrite';
+                  const perm = await res.handle.queryPermission({ mode });
                   if (perm === 'granted') {
                     directoryHandle = res.handle;
-                    updateFileStatus('saved', 'Carpeta configurada');
+                    updateFileStatus('saved', isCoarse ? 'Carpeta (solo lectura)' : 'Carpeta configurada');
                     await loadPromptConfig();
                     resolve(null);
                     return;
@@ -2759,8 +2760,9 @@
             return;
           }
           await initDB();
-          const picked = await window.showDirectoryPicker({ mode: 'readwrite' });
-          const perm = await picked.requestPermission({ mode: 'readwrite' });
+          const rw = isCoarse ? 'read' : 'readwrite';
+          const picked = await window.showDirectoryPicker({ mode: rw });
+          const perm = await picked.requestPermission({ mode: rw });
           if (perm !== 'granted') {
             showToast('Permiso denegado', 'error');
             return;
@@ -2771,8 +2773,8 @@
             await store.put({ id: 'notesFolder', handle: picked });
           }
           directoryHandle = picked;
-          updateFileStatus('saved', 'Carpeta configurada');
-          showToast('Acceso otorgado', 'success');
+          updateFileStatus('saved', isCoarse ? 'Carpeta (solo lectura)' : 'Carpeta configurada');
+          showToast(isCoarse ? 'Acceso de lectura otorgado (móvil)' : 'Acceso otorgado', 'success');
           hidePermissionModal();
           await loadPromptConfig();
         } catch (e) {
@@ -2922,6 +2924,10 @@
         }
         // Solicitar nueva carpeta
         try {
+          if (isCoarse) {
+            showToast('En móvil (solo lectura) capturas a carpeta están deshabilitadas', 'error');
+            return null;
+          }
           const picked = await window.showDirectoryPicker({ mode: 'readwrite' });
           const perm2 = await picked.requestPermission({ mode: 'readwrite' });
           if (perm2 !== 'granted') throw new Error('Permiso denegado');
