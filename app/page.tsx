@@ -332,9 +332,16 @@ export default function Home() {
 
   const selectDirectory = async () => {
     try {
-      if (!("showDirectoryPicker" in window) || isMobile) {
-        console.warn("[mobile/fallback] Directory picker not available or mobile detected, using file input")
-        fileInputRef.current?.click()
+      if (!("showDirectoryPicker" in window)) {
+        console.warn("[fallback] Directory picker not available, using folder input (webkitdirectory)")
+        if (fileInputRef.current) {
+          try {
+            fileInputRef.current.setAttribute('webkitdirectory', '')
+            fileInputRef.current.setAttribute('directory', '')
+            fileInputRef.current.removeAttribute('accept')
+          } catch {}
+          fileInputRef.current.click()
+        }
         return
       }
       const handle = await (window as any).showDirectoryPicker()
@@ -348,7 +355,15 @@ export default function Home() {
       void restoreCheckHistory(rawFiles)
       setStep(1)
     } catch (err) {
-      console.warn("[selectDirectory] cancelled or failed", err)
+      console.warn("[selectDirectory] cancelled or failed, falling back to folder input", err)
+      if (fileInputRef.current) {
+        try {
+          fileInputRef.current.setAttribute('webkitdirectory', '')
+          fileInputRef.current.setAttribute('directory', '')
+          fileInputRef.current.removeAttribute('accept')
+        } catch {}
+        try { fileInputRef.current.click() } catch {}
+      }
     }
   }
 
