@@ -65,25 +65,57 @@ const verifyPermission = async (handle: FileSystemDirectoryHandle) => {
   return false
 }
 
-const readAllFiles = async (dir: FileSystemDirectoryHandle) => {
+const readAllFiles = async (
+  dir: FileSystemDirectoryHandle,
+  onProgress?: (info: { processed: number; total?: number; current?: string }) => void,
+) => {
   const files: File[] = []
+  let processed = 0
+  // Best-effort count (optional): do a quick pass counting entries without getFile cost
+  let estimatedTotal: number | undefined
+  try {
+    let total = 0
+    const queue: FileSystemDirectoryHandle[] = [dir]
+    while (queue.length) {
+      const d = queue.shift()!
+      // @ts-ignore
+      for await (const [name, handle] of d.entries()) {
+        if (handle.kind === 'file') total++
+        else if (handle.kind === 'directory') queue.push(handle)
+      }
+    }
+    estimatedTotal = total
+    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivos…' })
+  } catch {}
+
   const traverse = async (
     directory: FileSystemDirectoryHandle,
     path: string,
   ): Promise<void> => {
-    for await (const [name, handle] of (directory as any).entries()) {
-      if (handle.kind === "file") {
-        const file = await handle.getFile()
-        Object.defineProperty(file, "webkitRelativePath", {
-          value: `${path}${name}`,
-        })
-        files.push(file)
-      } else if (handle.kind === "directory") {
+    // @ts-ignore
+    for await (const [name, handle] of directory.entries()) {
+      if (handle.kind === 'file') {
+        // Only get File for PDFs; skip others early
+        if (name.toLowerCase().endsWith('.pdf')) {
+          const file = await handle.getFile()
+          try {
+            Object.defineProperty(file, 'webkitRelativePath', { value: `${path}${name}` })
+          } catch {}
+          files.push(file)
+        }
+        processed++
+        if (processed % 10 === 0) {
+          onProgress?.({ processed, total: estimatedTotal, current: name })
+          // Yield to UI
+          await new Promise((r) => setTimeout(r, 0))
+        }
+      } else if (handle.kind === 'directory') {
         await traverse(handle, `${path}${name}/`)
       }
     }
   }
   await traverse(dir, `${dir.name}/`)
+  onProgress?.({ processed, total: estimatedTotal, current: 'Completado' })
   return files
 }
 
@@ -110,6 +142,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false)
   const [showDarkModal, setShowDarkModal] = useState(false)
   const [darkModeStart, setDarkModeStart] = useState(19)
+  const [loadingInfo, setLoadingInfo] = useState<{ active: boolean; processed: number; total?: number; current?: string }>({ active: false, processed: 0 })
   const [configFound, setConfigFound] = useState<boolean | null>(null)
   const [canonicalSubjects, setCanonicalSubjects] = useState<string[]>([])
   // const [timerRunning, setTimerRunning] = useState(false)
@@ -122,6 +155,7 @@ export default function Home() {
   const viewerRef = useRef<HTMLIFrameElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const selectingRef = useRef(false)
+  const lastOpenedRef = useRef<string | null>(null)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const toastTimerRef = useRef<number | null>(null)
   // const autoPausedRef = useRef(false)
@@ -350,13 +384,15 @@ export default function Home() {
       const handle = await (window as any).showDirectoryPicker()
       console.log("[selectDirectory] handle obtained", handle)
       await saveHandle(handle)
-      const rawFiles = await readAllFiles(handle)
+      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparando…' })
+      const rawFiles = await readAllFiles(handle, (i) => setLoadingInfo(prev => ({ active: true, ...i })))
       console.log("[selectDirectory] read files", { count: rawFiles.length })
       const files = filterSystemFiles(rawFiles)
       setNames([])
       setDirFiles(files)
       void restoreCheckHistory(rawFiles)
       setStep(1)
+      setLoadingInfo({ active: false, processed: 0 })
     } catch (err) {
       console.warn("[selectDirectory] cancelled or failed, falling back to folder input", err)
       if (fileInputRef.current) {
@@ -716,6 +752,17 @@ export default function Home() {
     return () => window.removeEventListener('message', handler)
   }, [currentPdf, pdfUrl])
 
+  // Mobile: auto-open PDFs in new tab when selected and blob ready
+  useEffect(() => {
+    if (!isMobile) return
+    if (!currentPdf || !currentPdf.isPdf || !pdfUrl) return
+    if (lastOpenedRef.current === currentPdf.path) return
+    try {
+      window.open(pdfUrl, '_blank', 'noopener,noreferrer')
+      lastOpenedRef.current = currentPdf.path
+    } catch {}
+  }, [isMobile, currentPdf, pdfUrl])
+
   // Global key (desktop only): press 'a' (when not typing) to open current PDF in a new tab
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -991,6 +1038,22 @@ export default function Home() {
           {viewerOpen ? (
             !pdfFullscreen && (
               <div className="flex flex-wrap items-center justify-between p-2 border-b gap-2">
+      {loadingInfo.active && (
+        <div className="fixed inset-x-0 bottom-0 z-50 p-3">
+          <div className="mx-auto max-w-md rounded bg-gray-900/90 text-white dark:bg-gray-800/90 px-3 py-2 text-sm">
+            <div className="flex items-center justify-between">
+              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}�</span>
+              <span className="opacity-80">{loadingInfo.current || ''}</span>
+            </div>
+            <div className="h-1 bg-gray-700 mt-2 rounded">
+              <div
+                className="h-1 bg-blue-500 rounded"
+                style={{ width: `${Math.min(100, Math.round((loadingInfo.total ? (loadingInfo.processed / (loadingInfo.total || 1)) : 0) * 100))}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
                 <div className="flex items-center gap-2">
                   <span className="truncate" title={currentPdf?.file.name}>
                     {currentPdf?.file.name}
@@ -1068,7 +1131,20 @@ export default function Home() {
                     onChange={toggleComplete}
                   />
                 )}
-                {currentPdf && <button onClick={() => setViewerOpen(true)}>Abrir</button>}
+                {currentPdf && (
+                  <button
+                    onClick={() => {
+                      if (isMobile && currentPdf.isPdf && pdfUrl) {
+                        try { window.open(pdfUrl, '_blank', 'noopener,noreferrer') } catch {}
+                        lastOpenedRef.current = currentPdf.path
+                      } else {
+                        setViewerOpen(true)
+                      }
+                    }}
+                  >
+                    Abrir
+                  </button>
+                )}
                 {currentPdf?.isPdf && pdfUrl && (
                   <button onClick={() => { try { window.open(pdfUrl, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
                     Nueva pestaña
@@ -1078,7 +1154,17 @@ export default function Home() {
             </div>
           )}
           <div className="flex-1">
-            {currentPdf && (pdfUrl || embedUrl) ? (
+            {isMobile ? (
+              currentPdf?.isPdf && pdfUrl ? (
+                <div className="w-full h-full flex items-center justify-center p-4 text-sm text-gray-500">
+                  En móvil, el PDF se abre en nueva pestaña.
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
+                  Selecciona un archivo
+                </div>
+              )
+            ) : currentPdf && (pdfUrl || embedUrl) ? (
               <iframe
                 ref={viewerRef}
                 onLoad={() =>
@@ -1145,6 +1231,7 @@ export default function Home() {
         try {
           const files = Array.from((e.target as HTMLInputElement).files || [])
           if (!files.length) return
+          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesando…' })
           const enhanced = files.map((f) => {
             const rp = (f as any).webkitRelativePath || ''
             if (!rp || rp.indexOf('/') < 0) {
@@ -1158,6 +1245,7 @@ export default function Home() {
           setSetupComplete(true)
           setViewWeek("")
           console.log('[file-input] loaded files', { count: enhanced.length })
+          setLoadingInfo({ active: false, processed: files.length, total: files.length, current: 'Completado' })
         } catch (err) {
           console.error('[file-input] failed', err)
         } finally {
