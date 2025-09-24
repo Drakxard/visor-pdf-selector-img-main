@@ -85,7 +85,7 @@ const readAllFiles = async (
       }
     }
     estimatedTotal = total
-    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivosâ€¦' })
+    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivos…' })
   } catch {}
 
   const traverse = async (
@@ -383,7 +383,7 @@ export default function Home() {
       const handle = await (window as any).showDirectoryPicker({ mode: 'read' })
       console.log("[selectDirectory] handle obtained", handle)
       await saveHandle(handle)
-      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparandoâ€¦' })
+      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparando…' })
       const rawFiles = await readAllFiles(handle, (i) => setLoadingInfo(prev => ({ active: true, ...i })))
       console.log("[selectDirectory] read files", { count: rawFiles.length })
       const files = filterSystemFiles(rawFiles)
@@ -824,7 +824,7 @@ export default function Home() {
               Paso 1: Selecciona la carpeta "gestor" ({isMobile ? 'toca para abrir' : 'Enter para abrir'})
             </p>
             <button onClick={selectDirectory}>Cargar carpeta</button>
-            {/* Hidden file input fallback (mounted during paso 0 for mÃ³viles) */}
+            {/* Hidden file input fallback (montado durante paso 0 para móviles) */}
             <input
               ref={fileInputRef}
               type="file"
@@ -861,7 +861,7 @@ export default function Home() {
       case 1: {
         return (
           <main className="min-h-screen flex items-center justify-center p-4">
-            <p>Buscando configuraciÃ³n previa...</p>
+            <p>Buscando configuración previa...</p>
           </main>
         )
       }
@@ -1115,7 +1115,7 @@ export default function Home() {
                     Inicio
                   </button>
                   <span>
-                    DÃ­as restantes: {currentPdf ? daysUntil(currentPdf) : ''}
+                    Días restantes: {currentPdf ? daysUntil(currentPdf) : ''}
                   </span>
                   <button
                     onClick={() =>
@@ -1156,9 +1156,9 @@ export default function Home() {
                 <span>ðŸ“„</span>
                 <span
                   className="truncate"
-                  title={currentPdf ? currentPdf.file.name : 'Sin selecciÃ³n'}
+                  title={currentPdf ? currentPdf.file.name : 'Sin selección'}
                 >
-                  {currentPdf ? currentPdf.file.name : 'Sin selecciÃ³n'}
+                  {currentPdf ? currentPdf.file.name : 'Sin selección'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1191,7 +1191,7 @@ export default function Home() {
                 )}
                 {currentPdf?.isPdf && pdfUrl && (
                   <button onClick={() => { try { window.open(pdfUrl, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-                    Nueva pestaÃ±a
+                    Nueva pestaña
                   </button>
                 )}
               </div>
@@ -1201,7 +1201,7 @@ export default function Home() {
             {isMobile ? (
               currentPdf?.isPdf && pdfUrl ? (
                 <div className="w-full h-full flex items-center justify-center p-4 text-sm text-gray-500">
-                  En mÃ³vil, el PDF se abre en nueva pestaÃ±a.
+                  En móvil, el PDF se abre en nueva pestaña.
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
@@ -1217,7 +1217,7 @@ export default function Home() {
                     '*',
                   )
                 }
-                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'PrevisualizaciÃ³n'}
+                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'Previsualización'}
                 src={
                   currentPdf.isPdf
                     ? `/visor/index.html?url=${encodeURIComponent(pdfUrl!)}&name=${encodeURIComponent(
@@ -1256,7 +1256,7 @@ export default function Home() {
           <button className="block w-full text-left" onClick={selectDirectory}>Reseleccionar carpeta</button>
           {currentPdf?.isPdf && pdfUrl && (
             <button className="block w-full text-left" onClick={() => { try { window.open(pdfUrl!, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-              Abrir PDF en nueva pestaÃ±a
+              Abrir PDF en nueva pestaña
             </button>
           )}
           <button className="block w-full text-left" onClick={() => setShowDarkModal(true)}>Configurar modo oscuro</button>
@@ -1275,7 +1275,7 @@ export default function Home() {
         try {
           const files = Array.from((e.target as HTMLInputElement).files || [])
           if (!files.length) return
-          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesandoâ€¦' })
+          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesando…' })
           const enhanced = files.map((f) => {
             const rp = (f as any).webkitRelativePath || ''
             if (!rp || rp.indexOf('/') < 0) {
