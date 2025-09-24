@@ -2689,14 +2689,97 @@
       // ========================================
       // PERSISTENCIA DE NOTAS
       // ========================================
-      function showPermissionModal() {}
-      function hidePermissionModal() {}
-      async function initDB() {}
-      async function loadDirectoryHandle() {
-        updateFileStatus('saved', 'Notas locales');
-        await loadPromptConfig();
+      function showPermissionModal() {
+        const modal = document.getElementById('permission-modal');
+        if (modal) modal.classList.remove('hidden');
       }
-      async function requestDirectoryAccess() {}
+      function hidePermissionModal() {
+        const modal = document.getElementById('permission-modal');
+        if (modal) modal.classList.add('hidden');
+      }
+      async function initDB() {
+        if (db) return db;
+        try {
+          db = await new Promise((resolve, reject) => {
+            const req = indexedDB.open('viewer-db', 1);
+            req.onupgradeneeded = () => {
+              try { req.result.createObjectStore('settings', { keyPath: 'id' }); } catch {}
+            };
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error || new Error('IDB open error'));
+          });
+        } catch (e) {
+          try { console.warn('[IDB] init failed', e); } catch {}
+          db = null;
+        }
+        return db;
+      }
+      async function loadDirectoryHandle() {
+        try {
+          await initDB();
+          if (!db || !supportsFileSystemAccess()) {
+            updateFileStatus('saved', 'Notas locales');
+            await loadPromptConfig();
+            return;
+          }
+          await new Promise((resolve) => {
+            const tx = db.transaction(['settings'], 'readonly');
+            const store = tx.objectStore('settings');
+            const req = store.get('notesFolder');
+            req.onsuccess = async () => {
+              const res = req.result;
+              if (res && res.handle) {
+                try {
+                  const perm = await res.handle.queryPermission({ mode: 'readwrite' });
+                  if (perm === 'granted') {
+                    directoryHandle = res.handle;
+                    updateFileStatus('saved', 'Carpeta configurada');
+                    await loadPromptConfig();
+                    resolve(null);
+                    return;
+                  }
+                } catch {}
+              }
+              updateFileStatus('no-access', 'Sin acceso');
+              resolve(null);
+            };
+            req.onerror = () => { updateFileStatus('error', 'Error acceso'); resolve(null); };
+          });
+        } catch (e) {
+          try { console.warn('[IDB] loadDirectoryHandle failed', e); } catch {}
+          updateFileStatus('error', 'Init Error');
+        }
+      }
+      async function requestDirectoryAccess() {
+        try {
+          if (!supportsFileSystemAccess()) {
+            showToast('Tu navegador no soporta acceso a carpeta. Se usarán notas locales.', 'error');
+            hidePermissionModal();
+            updateFileStatus('saved', 'Notas locales');
+            return;
+          }
+          await initDB();
+          const picked = await window.showDirectoryPicker({ mode: 'readwrite' });
+          const perm = await picked.requestPermission({ mode: 'readwrite' });
+          if (perm !== 'granted') {
+            showToast('Permiso denegado', 'error');
+            return;
+          }
+          if (db) {
+            const tx = db.transaction(['settings'], 'readwrite');
+            const store = tx.objectStore('settings');
+            await store.put({ id: 'notesFolder', handle: picked });
+          }
+          directoryHandle = picked;
+          updateFileStatus('saved', 'Carpeta configurada');
+          showToast('Acceso otorgado', 'success');
+          hidePermissionModal();
+          await loadPromptConfig();
+        } catch (e) {
+          try { console.error('[requestDirectoryAccess] failed', e); } catch {}
+          showToast('No se pudo acceder a la carpeta', 'error');
+        }
+      }
       function getNotesFileName(pdfName) {
         const cleanName = pdfName.replace(/[^a-zA-Z0-9.-]/g, '_');
         return `${cleanName}_notas.json`;
@@ -2763,11 +2846,11 @@
         return notes;
       }
       const folderBtn = document.getElementById('folder-btn');
-      folderBtn && folderBtn.addEventListener('click', () => {});
+      folderBtn && folderBtn.addEventListener('click', () => { try { showPermissionModal(); } catch {} });
       const grantBtn = document.getElementById('grant-access-btn');
-      grantBtn && grantBtn.addEventListener('click', () => {});
+      grantBtn && grantBtn.addEventListener('click', () => { try { requestDirectoryAccess(); } catch {} });
       const skipBtn = document.getElementById('skip-access-btn');
-      skipBtn && skipBtn.addEventListener('click', () => {});
+      skipBtn && skipBtn.addEventListener('click', () => { try { hidePermissionModal(); } catch {} });
 
       // ========================================
       // MODAL INFO
