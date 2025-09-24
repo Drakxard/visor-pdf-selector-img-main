@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { getPoolIfConfigured } from "@/lib/db"
 
+// Ensure Node runtime on Vercel for pg compatibility
+export const runtime = "nodejs"
+
 export async function GET() {
   try {
     const pool = getPoolIfConfigured()
