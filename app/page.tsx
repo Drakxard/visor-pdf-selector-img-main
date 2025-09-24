@@ -636,16 +636,21 @@ export default function Home() {
       .filter((f) => !completed[f.path])
       .sort((a, b) => a.file.name.localeCompare(b.file.name))
     setQueue(q)
-    if (q.length) {
-      const current = currentPdf && q.find((f) => f.path === currentPdf.path)
-      const target = current || q[0]
-      setCurrentPdf(target)
-      setQueueIndex(q.findIndex((f) => f.path === target.path))
-    } else {
+    if (!q.length) {
       setCurrentPdf(null)
       setQueueIndex(0)
+      return
     }
-  }, [directoryTree, completed])
+    if (currentPdf) {
+      const idx = q.findIndex((f) => f.path === currentPdf.path)
+      if (idx >= 0) {
+        setQueueIndex(idx)
+      } else {
+        setCurrentPdf(null)
+        setQueueIndex(0)
+      }
+    }
+  }, [directoryTree, completed, currentPdf])
 
   useEffect(() => {
     if (viewWeek && !directoryTree[viewWeek]) {
@@ -692,8 +697,9 @@ export default function Home() {
     }
   }
 
-  // object url or embed link for viewer
+  // object url or embed link for viewer (skip on mobile to avoid preview overhead)
   useEffect(() => {
+    if (isMobile) return
     if (!currentPdf) {
       setPdfUrl(null)
       setEmbedUrl(null)
@@ -746,7 +752,7 @@ export default function Home() {
         setEmbedUrl(null)
       }
     })()
-  }, [currentPdf])
+  }, [currentPdf, isMobile])
 
   // remember last opened file
   useEffect(() => {
@@ -779,16 +785,7 @@ export default function Home() {
     return () => window.removeEventListener('message', handler)
   }, [currentPdf, pdfUrl])
 
-  // Mobile: auto-open PDFs in new tab when selected and blob ready
-  useEffect(() => {
-    if (!isMobile) return
-    if (!currentPdf || !currentPdf.isPdf || !pdfUrl) return
-    if (lastOpenedRef.current === currentPdf.path) return
-    try {
-      window.open(pdfUrl, '_blank', 'noopener,noreferrer')
-      lastOpenedRef.current = currentPdf.path
-    } catch {}
-  }, [isMobile, currentPdf, pdfUrl])
+  // On mobile, do not auto-open anything; explicit user action required
 
   // Global key (desktop only): press 'a' (when not typing) to open current PDF in a new tab
   useEffect(() => {
@@ -994,6 +991,27 @@ export default function Home() {
     if (!path) return "Carpetas"
     const segments = path.split("/").filter(Boolean)
     return segments.length ? segments.join(" / ") : "Carpetas"
+  }
+
+  // Helper: open a PDF in a new tab (mobile-friendly), resolving from handle if needed
+  const openPdfInNewTab = async (pdf: PdfFile) => {
+    try {
+      let file = pdf.file
+      if (file && file.size === 0) {
+        const h = (file as any).___handle
+        if (h && typeof h.getFile === 'function') {
+          try { file = await h.getFile() } catch {}
+        }
+      }
+      const url = URL.createObjectURL(file)
+      try { window.open(url, '_blank', 'noopener,noreferrer') } catch {}
+      // Do NOT revoke immediately to avoid 404 in the new tab
+    } catch (e) {
+      console.error('[openPdfInNewTab] failed', e)
+      setToast({ type: 'error', text: 'No se pudo abrir el PDF' })
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+      toastTimerRef.current = window.setTimeout(() => setToast(null), 3000)
+    }
   }
 
   // main interface
@@ -1314,6 +1332,10 @@ export default function Home() {
   </>
   )
 }
+
+
+
+
 
 
 
