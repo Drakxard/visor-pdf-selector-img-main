@@ -1,9 +1,9 @@
-﻿"use client"
+"use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 
-const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+const days = ["Lunes", "Martes", "Mi�rcoles", "Jueves", "Viernes"]
 
 type PdfFile = {
   file: File
@@ -85,7 +85,7 @@ const readAllFiles = async (
       }
     }
     estimatedTotal = total
-    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivos…' })
+    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivos�' })
   } catch {}
 
   const traverse = async (
@@ -142,6 +142,9 @@ export default function Home() {
   const [showDarkModal, setShowDarkModal] = useState(false)
   const [darkModeStart, setDarkModeStart] = useState(19)
   const [customLinks, setCustomLinks] = useState<Record<string, { id: string; name: string; url: string }[]>>({})
+  const [showAddUrl, setShowAddUrl] = useState(false)
+  const [addUrlValue, setAddUrlValue] = useState('')
+  const [addUrlName, setAddUrlName] = useState('')
   const [loadingInfo, setLoadingInfo] = useState<{ active: boolean; processed: number; total?: number; current?: string }>({ active: false, processed: 0 })
   const [configFound, setConfigFound] = useState<boolean | null>(null)
   const [canonicalSubjects, setCanonicalSubjects] = useState<string[]>([])
@@ -178,15 +181,18 @@ export default function Home() {
   }
 
   const addCustomLink = (dirPath: string) => {
-    const raw = (typeof window !== 'undefined') ? window.prompt('Pega la URL') : null
+    let raw = addUrlValue.trim()
     if (!raw) return
     let defName = ''
     try { const u = new URL(raw); defName = u.hostname.replace(/^www\./, '') } catch { defName = 'Enlace' }
-    const name = (typeof window !== 'undefined') ? (window.prompt('Nombre del enlace', defName) || defName) : defName
+    const name = (addUrlName.trim() || defName)
     const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`
     const next = { ...customLinks }
     next[dirPath || ''] = [ ...(next[dirPath || ''] || []), { id, name, url: raw } ]
     persistCustomLinks(next)
+    setAddUrlValue('')
+    setAddUrlName('')
+    setShowAddUrl(false)
     // Give user feedback
     if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
     setToast({ type: 'success', text: 'Enlace agregado' })
@@ -194,7 +200,7 @@ export default function Home() {
   }
 
   const removeCustomLink = (dirPath: string, id: string) => {
-    const ok = (typeof window !== 'undefined') ? window.confirm('¿Eliminar este enlace?') : true
+    const ok = (typeof window !== 'undefined') ? window.confirm('�Eliminar este enlace?') : true
     if (!ok) return
     const next = { ...customLinks }
     next[dirPath || ''] = (next[dirPath || ''] || []).filter(l => l.id !== id)
@@ -262,10 +268,10 @@ export default function Home() {
   // const toggleTimer = useCallback(() => {
   //   if (timerRunning) {
   //     pauseTimer()
-  //     setToast({ type: 'success', text: 'CronÃ³metro pausado' })
+  //     setToast({ type: 'success', text: 'Cronómetro pausado' })
   //   } else {
   //     startTimer()
-  //     setToast({ type: 'success', text: 'CronÃ³metro iniciado' })
+  //     setToast({ type: 'success', text: 'Cronómetro iniciado' })
   //   }
   //   if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
   //   toastTimerRef.current = window.setTimeout(() => setToast(null), 3000)
@@ -422,7 +428,7 @@ export default function Home() {
       const handle = await (window as any).showDirectoryPicker({ mode: 'read' })
       console.log("[selectDirectory] handle obtained", handle)
       await saveHandle(handle)
-      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparando…' })
+      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparando�' })
       const rawFiles = await readAllFiles(handle, (i) => setLoadingInfo(prev => ({ active: true, ...i })))
       console.log("[selectDirectory] read files", { count: rawFiles.length })
       const files = filterSystemFiles(rawFiles)
@@ -882,7 +888,7 @@ export default function Home() {
               Paso 1: Selecciona la carpeta "gestor" ({isMobile ? 'toca para abrir' : 'Enter para abrir'})
             </p>
             <button onClick={selectDirectory}>Cargar carpeta</button>
-            {/* Hidden file input fallback (montado durante paso 0 para móviles) */}
+            {/* Hidden file input fallback (montado durante paso 0 para m�viles) */}
             <input
               ref={fileInputRef}
               type="file"
@@ -919,7 +925,7 @@ export default function Home() {
       case 1: {
         return (
           <main className="min-h-screen flex items-center justify-center p-4">
-            <p>Buscando configuración previa...</p>
+            <p>Buscando configuraci�n previa...</p>
           </main>
         )
       }
@@ -930,7 +936,7 @@ export default function Home() {
     const dayMap: Record<string, number> = {
       'Lunes': 1,
       'Martes': 2,
-      'Miércoles': 3,
+      'Mi�rcoles': 3,
       'Jueves': 4,
       'Viernes': 5,
     }
@@ -1086,16 +1092,16 @@ export default function Home() {
                   className="underline"
                   onClick={() => setViewWeek(parentDirectory || null)}
                 >
-                  â† Volver
+                  {"\u2190"} Volver
                 </button>
               )}
             </div>
           )}
           <h2 className="text-xl">{formatBreadcrumb(viewWeek)}</h2>
-          <div className="mt-2">
-            <button className="underline" onClick={() => addCustomLink(viewWeek || '')}>Agregar URL</button>
-          </div>
-          {childDirectories.length > 0 && (
+
+
+
+
             <ul className="space-y-1">
               {childDirectories.map((dir) => (
                 <li key={dir} className="font-bold">
@@ -1146,9 +1152,16 @@ export default function Home() {
             </div>
           )}
           {childDirectories.length === 0 && selectedFiles.length === 0 && (
-            <p className="text-sm text-gray-500">Carpeta vacÃ­a</p>
+
+            <p className="text-sm text-gray-500">Carpeta vac�a</p>
           )}
-        </aside>
+
+          {childDirectories.length === 0 && (
+            <div className="mt-3">
+              <button className="underline" onClick={() => setShowAddUrl(true)}>Agregar URL</button>
+            </div>
+          )}
+
        <section
           className={`flex flex-col flex-1 md:h-screen ${viewerOpen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900' : ''}`}
         >
@@ -1159,7 +1172,7 @@ export default function Home() {
         <div className="fixed inset-x-0 bottom-0 z-50 p-3">
           <div className="mx-auto max-w-md rounded bg-gray-900/90 text-white dark:bg-gray-800/90 px-3 py-2 text-sm">
             <div className="flex items-center justify-between">
-              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}…</span>
+              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}�</span>
               <span className="opacity-80">{loadingInfo.current || ''}</span>
             </div>
             <div className="h-1 bg-gray-700 mt-2 rounded">
@@ -1182,13 +1195,13 @@ export default function Home() {
                     onClick={() => {
                       setViewerOpen(false)
                       setPdfFullscreen(false)
-                        setViewWeek(null)
-                      }}
+                      setViewWeek(null)
+                    }}
                   >
                     Inicio
                   </button>
                   <span>
-                    Días restantes: {currentPdf ? daysUntil(currentPdf) : ''}
+                    Dias restantes: {currentPdf ? daysUntil(currentPdf) : ''}
                   </span>
                   <button
                     onClick={() =>
@@ -1198,14 +1211,14 @@ export default function Home() {
                       )
                     }
                   >
-                    {pdfFullscreen ? 'ðŸ——' : 'â›¶'}
+                    {"\u26F6"}
                   </button>
                   <button
                     onClick={() => {
                       setTheme(theme === 'light' ? 'dark' : 'light')
                     }}
                   >
-                    {theme === 'light' ? 'ðŸŒž' : 'ðŸŒ™'}
+                    {theme === 'light' ? '\u263E' : '\u2600'}
                   </button>
                   <button
                     onClick={() => {
@@ -1217,29 +1230,29 @@ export default function Home() {
                       )
                     }}
                   >
-                    âœ•
+                    Reiniciar zoom
                   </button>
-                  {/* <span>Hoy: {formatHM(todaySeconds)}</span> */}
+                </div>
                 </div>
               </div>
             )
           ) : (
             <div className="flex flex-wrap items-center justify-between p-2 border-b gap-2">
               <div className="flex items-center gap-2">
-                <span>ðŸ“„</span>
+                <span>PDF</span>
                 <span
                   className="truncate"
-                  title={currentPdf ? currentPdf.file.name : 'Sin selección'}
+                  title={currentPdf ? currentPdf.file.name : 'Sin selecci�n'}
                 >
-                  {currentPdf ? currentPdf.file.name : 'Sin selección'}
+                  {currentPdf ? currentPdf.file.name : 'Sin selecci�n'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={prevPdf} disabled={queueIndex <= 0}>
-                  â†
+                  ?
                 </button>
                 <button onClick={nextPdf} disabled={queueIndex >= queue.length - 1}>
-                  â†’
+                  ?
                 </button>
                 {currentPdf && (
                   <input
@@ -1264,17 +1277,16 @@ export default function Home() {
                 )}
                 {currentPdf?.isPdf && pdfUrl && (
                   <button onClick={() => { try { window.open(pdfUrl, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-                    Nueva pestaña
+                    Nueva pesta�a
                   </button>
                 )}
               </div>
-            </div>
           )}
           <div className={`flex-1 ${isMobile ? 'hidden' : ''}`}>
             {isMobile ? (
               currentPdf?.isPdf && pdfUrl ? (
                 <div className="w-full h-full flex items-center justify-center p-4 text-sm text-gray-500">
-                  En móvil, el PDF se abre en nueva pestaña.
+                  En m�vil, el PDF se abre en nueva pesta�a.
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
@@ -1290,7 +1302,7 @@ export default function Home() {
                     '*',
                   )
                 }
-                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'Previsualización'}
+                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'Previsualizaci�n'}
                 src={
                   currentPdf.isPdf
                     ? `/visor/index.html?url=${encodeURIComponent(pdfUrl!)}&name=${encodeURIComponent(
@@ -1323,13 +1335,13 @@ export default function Home() {
       </div>
     )}
     <div className="fixed top-2 right-2">
-      <button onClick={() => setShowSettings(!showSettings)}>âš™ï¸</button>
+      <button onClick={() => setShowSettings(!showSettings)}>⚙️</button>
       {showSettings && (
         <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 space-y-2 text-sm text-gray-800 dark:text-gray-200">
           <button className="block w-full text-left" onClick={selectDirectory}>Reseleccionar carpeta</button>
           {currentPdf?.isPdf && pdfUrl && (
             <button className="block w-full text-left" onClick={() => { try { window.open(pdfUrl!, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-              Abrir PDF en nueva pestaña
+              Abrir PDF en nueva pesta�a
             </button>
           )}
           <button className="block w-full text-left" onClick={() => setShowDarkModal(true)}>Configurar modo oscuro</button>
@@ -1348,7 +1360,7 @@ export default function Home() {
         try {
           const files = Array.from((e.target as HTMLInputElement).files || [])
           if (!files.length) return
-          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesando…' })
+          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesando�' })
           const enhanced = files.map((f) => {
             const rp = (f as any).webkitRelativePath || ''
             if (!rp || rp.indexOf('/') < 0) {
@@ -1371,6 +1383,29 @@ export default function Home() {
       }}
     />
 
+
+    {showAddUrl && (
+      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
+        <div className="bg-white dark:bg-gray-800 p-4 rounded shadow w-96 space-y-3 text-gray-800 dark:text-gray-200">
+          <div className="text-lg font-semibold">Agregar URL</div>
+          <div className="space-y-2">
+            <label className="block text-sm">
+              URL
+              <input type="url" className="mt-1 w-full border rounded px-2 py-1 bg-transparent" value={addUrlValue} onChange={(e) => setAddUrlValue(e.target.value)} placeholder="https://..." />
+            </label>
+            <label className="block text-sm">
+              Nombre (opcional)
+              <input type="text" className="mt-1 w-full border rounded px-2 py-1 bg-transparent" value={addUrlName} onChange={(e) => setAddUrlName(e.target.value)} placeholder="Ej.: youtube.com" />
+            </label>
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setShowAddUrl(false); setAddUrlValue(""); setAddUrlName(""); }} className="px-3 py-1 border rounded dark:border-gray-600">Cancelar</button>
+            <button disabled={!addUrlValue.trim()} onClick={() => addCustomLink(viewWeek || "")} className="px-3 py-1 rounded bg-blue-600 text-white disabled:opacity-50">Guardar</button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {showDarkModal && (
       <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
         <div className="bg-white dark:bg-gray-800 p-4 rounded shadow space-y-4 w-72 text-gray-800 dark:text-gray-200">
@@ -1381,7 +1416,7 @@ export default function Home() {
             </div>
             <div className="relative w-full">
               <div className="absolute w-full flex justify-center -top-5 pointer-events-none">
-                <span>â†“</span>
+                <span>↓</span>
               </div>
               <input
                 type="range"
