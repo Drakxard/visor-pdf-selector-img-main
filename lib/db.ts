@@ -23,3 +23,15 @@ export function getPool(): Pool {
   }
   return global.__dbPool!
 }
+
+// Returns a pool if DATABASE_URL is configured; otherwise null.
+export function getPoolIfConfigured(): Pool | null {
+  try {
+    const url = process.env.DATABASE_URL
+    if (!url) return null
+    return getPool()
+  } catch (e) {
+    try { console.warn('[db] Pool not configured or failed to init', e) } catch {}
+    return null
+  }
+}

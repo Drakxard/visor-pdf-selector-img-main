@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
-import { getPool } from "@/lib/db";
+import { getPoolIfConfigured } from "@/lib/db";
 
 export const runtime = "nodejs";
-
-const pool = getPool();
 
 // GET /api/progress/init
 // Creates the progress table on Neon if missing and seeds initial rows
 export async function GET() {
   try {
+    const pool = getPoolIfConfigured();
+    if (!pool) {
+      return NextResponse.json({ ok: false, error: 'DB not configured', hint: 'Define DATABASE_URL en .env.local para habilitar esta ruta.' }, { status: 503 });
+    }
     const createSql = `
       CREATE TABLE IF NOT EXISTS public.progress (
         id SERIAL PRIMARY KEY,

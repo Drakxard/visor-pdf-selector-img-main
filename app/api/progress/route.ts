@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPool } from "@/lib/db";
+import { getPoolIfConfigured } from "@/lib/db";
 
 // Ensure we run on Node runtime (not edge)
 export const runtime = "nodejs";
 
-const pool = getPool();
-
 export async function POST(req: NextRequest) {
   try {
+    const pool = getPoolIfConfigured();
+    if (!pool) {
+      return NextResponse.json({
+        ok: false,
+        error: 'DB not configured',
+        hint: 'Define DATABASE_URL en .env.local para habilitar progreso persistente.'
+      }, { status: 503 });
+    }
     const { subject, tableType, delta } = await req.json();
     if (
       typeof subject !== "string" ||

@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server"
-import { getPool } from "@/lib/db"
-
-const pool = getPool()
+import { getPoolIfConfigured } from "@/lib/db"
 
 export async function GET() {
   try {
+    const pool = getPoolIfConfigured()
+    if (!pool) {
+      console.warn('/api/time GET: DATABASE_URL not configured')
+      return NextResponse.json({ seconds: 0, warning: 'DB not configured' })
+    }
     await pool.query(`
       CREATE TABLE IF NOT EXISTS daily_time (
         date DATE PRIMARY KEY,
@@ -27,6 +30,12 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const pool = getPoolIfConfigured()
+    if (!pool) {
+      console.warn('/api/time POST: DATABASE_URL not configured')
+      const { seconds } = await req.json().catch(() => ({ seconds: 0 }))
+      return NextResponse.json({ seconds: Number(seconds) || 0, warning: 'DB not configured' })
+    }
     const { seconds } = await req.json()
     if (!seconds || seconds <= 0) {
       return NextResponse.json({ seconds: 0 })
