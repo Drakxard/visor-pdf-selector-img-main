@@ -733,6 +733,34 @@ export default function Home() {
               Paso 1: Selecciona la carpeta "gestor" ({isMobile ? 'toca para abrir' : 'Enter para abrir'})
             </p>
             <button onClick={selectDirectory}>Cargar carpeta</button>
+            {/* Hidden file input fallback (mounted during paso 0 for móviles) */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              multiple
+              className="hidden"
+              onChange={async (e) => {
+                try {
+                  const files = Array.from((e.target as HTMLInputElement).files || [])
+                  if (!files.length) return
+                  const enhanced = files.map((f) => {
+                    try { Object.defineProperty(f, 'webkitRelativePath', { value: f.name }) } catch {}
+                    return f
+                  })
+                  setNames([])
+                  setDirFiles(filterSystemFiles(enhanced))
+                  setStep(1)
+                  setSetupComplete(true)
+                  setViewWeek("")
+                  console.log('[file-input:step0] loaded files', { count: enhanced.length })
+                } catch (err) {
+                  console.error('[file-input:step0] failed', err)
+                } finally {
+                  if (e.target) (e.target as HTMLInputElement).value = ''
+                }
+              }}
+            />
           </main>
         )
       }
