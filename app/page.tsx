@@ -1,9 +1,9 @@
-"use client"
+﻿"use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 
-const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
+const days = ["Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes"]
 
 type PdfFile = {
   file: File
@@ -85,7 +85,7 @@ const readAllFiles = async (
       }
     }
     estimatedTotal = total
-    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivos…' })
+    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivosâ€¦' })
   } catch {}
 
   const traverse = async (
@@ -95,13 +95,12 @@ const readAllFiles = async (
     // @ts-ignore
     for await (const [name, handle] of directory.entries()) {
       if (handle.kind === 'file') {
-        // Only get File for PDFs; skip others early
+        // Only index PDFs; avoid handle.getFile() for speed/memory (lazy load later)
         if (name.toLowerCase().endsWith('.pdf')) {
-          const file = await handle.getFile()
-          try {
-            Object.defineProperty(file, 'webkitRelativePath', { value: `${path}${name}` })
-          } catch {}
-          files.push(file)
+          const stub = new File([], name, { type: 'application/pdf' })
+          try { Object.defineProperty(stub, 'webkitRelativePath', { value: `${path}${name}` }) } catch {}
+          try { Object.defineProperty(stub, '___handle', { value: handle }) } catch {}
+          files.push(stub)
         }
         processed++
         if (processed % 10 === 0) {
@@ -224,10 +223,10 @@ export default function Home() {
   // const toggleTimer = useCallback(() => {
   //   if (timerRunning) {
   //     pauseTimer()
-  //     setToast({ type: 'success', text: 'Cronómetro pausado' })
+  //     setToast({ type: 'success', text: 'CronÃ³metro pausado' })
   //   } else {
   //     startTimer()
-  //     setToast({ type: 'success', text: 'Cronómetro iniciado' })
+  //     setToast({ type: 'success', text: 'CronÃ³metro iniciado' })
   //   }
   //   if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
   //   toastTimerRef.current = window.setTimeout(() => setToast(null), 3000)
@@ -384,7 +383,7 @@ export default function Home() {
       const handle = await (window as any).showDirectoryPicker()
       console.log("[selectDirectory] handle obtained", handle)
       await saveHandle(handle)
-      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparando…' })
+      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparandoâ€¦' })
       const rawFiles = await readAllFiles(handle, (i) => setLoadingInfo(prev => ({ active: true, ...i })))
       console.log("[selectDirectory] read files", { count: rawFiles.length })
       const files = filterSystemFiles(rawFiles)
@@ -696,10 +695,23 @@ export default function Home() {
       return
     }
     if (currentPdf.isPdf) {
-      const url = URL.createObjectURL(currentPdf.file)
-      setPdfUrl(url)
-      setEmbedUrl(null)
-      return () => URL.revokeObjectURL(url)
+      let fileForBlob: File | null = currentPdf.file || null
+      // Lazy-load real File if we only indexed a stub (size 0) and have a handle attached
+      if (fileForBlob && fileForBlob.size === 0) {
+        const h = (fileForBlob as any).___handle
+        if (h && typeof h.getFile === 'function') {
+          try { fileForBlob = await h.getFile() } catch {}
+        }
+      }
+      try {
+        const url = URL.createObjectURL(fileForBlob || currentPdf.file)
+        setPdfUrl(url)
+        setEmbedUrl(null)
+        return () => URL.revokeObjectURL(url)
+      } catch {
+        setPdfUrl(null)
+      }
+      return
     }
     if (currentPdf.url) {
       setPdfUrl(null)
@@ -801,7 +813,7 @@ export default function Home() {
               Paso 1: Selecciona la carpeta "gestor" ({isMobile ? 'toca para abrir' : 'Enter para abrir'})
             </p>
             <button onClick={selectDirectory}>Cargar carpeta</button>
-            {/* Hidden file input fallback (mounted during paso 0 for móviles) */}
+            {/* Hidden file input fallback (mounted during paso 0 for mÃ³viles) */}
             <input
               ref={fileInputRef}
               type="file"
@@ -838,7 +850,7 @@ export default function Home() {
       case 1: {
         return (
           <main className="min-h-screen flex items-center justify-center p-4">
-            <p>Buscando configuración previa...</p>
+            <p>Buscando configuraciÃ³n previa...</p>
           </main>
         )
       }
@@ -849,7 +861,7 @@ export default function Home() {
     const dayMap: Record<string, number> = {
       Lunes: 1,
       Martes: 2,
-      Miércoles: 3,
+      MiÃ©rcoles: 3,
       Jueves: 4,
       Viernes: 5,
     }
@@ -984,7 +996,7 @@ export default function Home() {
                   className="underline"
                   onClick={() => setViewWeek(parentDirectory || null)}
                 >
-                  ← Volver
+                  â† Volver
                 </button>
               )}
             </div>
@@ -1029,7 +1041,7 @@ export default function Home() {
             </div>
           )}
           {childDirectories.length === 0 && selectedFiles.length === 0 && (
-            <p className="text-sm text-gray-500">Carpeta vacía</p>
+            <p className="text-sm text-gray-500">Carpeta vacÃ­a</p>
           )}
         </aside>
        <section
@@ -1042,7 +1054,7 @@ export default function Home() {
         <div className="fixed inset-x-0 bottom-0 z-50 p-3">
           <div className="mx-auto max-w-md rounded bg-gray-900/90 text-white dark:bg-gray-800/90 px-3 py-2 text-sm">
             <div className="flex items-center justify-between">
-              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}�</span>
+              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}…</span>
               <span className="opacity-80">{loadingInfo.current || ''}</span>
             </div>
             <div className="h-1 bg-gray-700 mt-2 rounded">
@@ -1071,7 +1083,7 @@ export default function Home() {
                     Inicio
                   </button>
                   <span>
-                    Días restantes: {currentPdf ? daysUntil(currentPdf) : ''}
+                    DÃ­as restantes: {currentPdf ? daysUntil(currentPdf) : ''}
                   </span>
                   <button
                     onClick={() =>
@@ -1081,14 +1093,14 @@ export default function Home() {
                       )
                     }
                   >
-                    {pdfFullscreen ? '🗗' : '⛶'}
+                    {pdfFullscreen ? 'ðŸ——' : 'â›¶'}
                   </button>
                   <button
                     onClick={() => {
                       setTheme(theme === 'light' ? 'dark' : 'light')
                     }}
                   >
-                    {theme === 'light' ? '🌞' : '🌙'}
+                    {theme === 'light' ? 'ðŸŒž' : 'ðŸŒ™'}
                   </button>
                   <button
                     onClick={() => {
@@ -1100,7 +1112,7 @@ export default function Home() {
                       )
                     }}
                   >
-                    ✕
+                    âœ•
                   </button>
                   {/* <span>Hoy: {formatHM(todaySeconds)}</span> */}
                 </div>
@@ -1109,20 +1121,20 @@ export default function Home() {
           ) : (
             <div className="flex flex-wrap items-center justify-between p-2 border-b gap-2">
               <div className="flex items-center gap-2">
-                <span>📄</span>
+                <span>ðŸ“„</span>
                 <span
                   className="truncate"
-                  title={currentPdf ? currentPdf.file.name : 'Sin selección'}
+                  title={currentPdf ? currentPdf.file.name : 'Sin selecciÃ³n'}
                 >
-                  {currentPdf ? currentPdf.file.name : 'Sin selección'}
+                  {currentPdf ? currentPdf.file.name : 'Sin selecciÃ³n'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <button onClick={prevPdf} disabled={queueIndex <= 0}>
-                  ←
+                  â†
                 </button>
                 <button onClick={nextPdf} disabled={queueIndex >= queue.length - 1}>
-                  →
+                  â†’
                 </button>
                 {currentPdf && (
                   <input
@@ -1147,7 +1159,7 @@ export default function Home() {
                 )}
                 {currentPdf?.isPdf && pdfUrl && (
                   <button onClick={() => { try { window.open(pdfUrl, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-                    Nueva pestaña
+                    Nueva pestaÃ±a
                   </button>
                 )}
               </div>
@@ -1157,7 +1169,7 @@ export default function Home() {
             {isMobile ? (
               currentPdf?.isPdf && pdfUrl ? (
                 <div className="w-full h-full flex items-center justify-center p-4 text-sm text-gray-500">
-                  En móvil, el PDF se abre en nueva pestaña.
+                  En mÃ³vil, el PDF se abre en nueva pestaÃ±a.
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
@@ -1173,7 +1185,7 @@ export default function Home() {
                     '*',
                   )
                 }
-                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'Previsualización'}
+                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'PrevisualizaciÃ³n'}
                 src={
                   currentPdf.isPdf
                     ? `/visor/index.html?url=${encodeURIComponent(pdfUrl!)}&name=${encodeURIComponent(
@@ -1206,13 +1218,13 @@ export default function Home() {
       </div>
     )}
     <div className="fixed top-2 right-2">
-      <button onClick={() => setShowSettings(!showSettings)}>⚙️</button>
+      <button onClick={() => setShowSettings(!showSettings)}>âš™ï¸</button>
       {showSettings && (
         <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 space-y-2 text-sm text-gray-800 dark:text-gray-200">
           <button className="block w-full text-left" onClick={selectDirectory}>Reseleccionar carpeta</button>
           {currentPdf?.isPdf && pdfUrl && (
             <button className="block w-full text-left" onClick={() => { try { window.open(pdfUrl!, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-              Abrir PDF en nueva pestaña
+              Abrir PDF en nueva pestaÃ±a
             </button>
           )}
           <button className="block w-full text-left" onClick={() => setShowDarkModal(true)}>Configurar modo oscuro</button>
@@ -1231,7 +1243,7 @@ export default function Home() {
         try {
           const files = Array.from((e.target as HTMLInputElement).files || [])
           if (!files.length) return
-          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesando…' })
+          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesandoâ€¦' })
           const enhanced = files.map((f) => {
             const rp = (f as any).webkitRelativePath || ''
             if (!rp || rp.indexOf('/') < 0) {
@@ -1264,7 +1276,7 @@ export default function Home() {
             </div>
             <div className="relative w-full">
               <div className="absolute w-full flex justify-center -top-5 pointer-events-none">
-                <span>↓</span>
+                <span>â†“</span>
               </div>
               <input
                 type="range"
@@ -1287,3 +1299,4 @@ export default function Home() {
   </>
   )
 }
+
