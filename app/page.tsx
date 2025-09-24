@@ -697,9 +697,8 @@ export default function Home() {
     }
   }
 
-  // object url or embed link for viewer (skip on mobile to avoid preview overhead)
+  // object url or embed link for viewer
   useEffect(() => {
-    if (isMobile) return
     if (!currentPdf) {
       setPdfUrl(null)
       setEmbedUrl(null)
@@ -1198,7 +1197,7 @@ export default function Home() {
               </div>
             </div>
           )}
-          <div className="flex-1">
+          <div className={`flex-1 ${isMobile ? 'hidden' : ''}`}>
             {isMobile ? (
               currentPdf?.isPdf && pdfUrl ? (
                 <div className="w-full h-full flex items-center justify-center p-4 text-sm text-gray-500">
