@@ -141,6 +141,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false)
   const [showDarkModal, setShowDarkModal] = useState(false)
   const [darkModeStart, setDarkModeStart] = useState(19)
+  const [customLinks, setCustomLinks] = useState<Record<string, { id: string; name: string; url: string }[]>>({})
   const [loadingInfo, setLoadingInfo] = useState<{ active: boolean; processed: number; total?: number; current?: string }>({ active: false, processed: 0 })
   const [configFound, setConfigFound] = useState<boolean | null>(null)
   const [canonicalSubjects, setCanonicalSubjects] = useState<string[]>([])
@@ -162,6 +163,44 @@ export default function Home() {
   // Avoid hydration mismatch: render only after mounted
   const [mounted, setMounted] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+
+  // Load custom links from localStorage
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('customLinks')
+      if (stored) setCustomLinks(JSON.parse(stored))
+    } catch {}
+  }, [])
+
+  const persistCustomLinks = (next: Record<string, { id: string; name: string; url: string }[]>) => {
+    setCustomLinks(next)
+    try { localStorage.setItem('customLinks', JSON.stringify(next)) } catch {}
+  }
+
+  const addCustomLink = (dirPath: string) => {
+    const raw = (typeof window !== 'undefined') ? window.prompt('Pega la URL') : null
+    if (!raw) return
+    let defName = ''
+    try { const u = new URL(raw); defName = u.hostname.replace(/^www\./, '') } catch { defName = 'Enlace' }
+    const name = (typeof window !== 'undefined') ? (window.prompt('Nombre del enlace', defName) || defName) : defName
+    const id = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2,7)}`
+    const next = { ...customLinks }
+    next[dirPath || ''] = [ ...(next[dirPath || ''] || []), { id, name, url: raw } ]
+    persistCustomLinks(next)
+    // Give user feedback
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    setToast({ type: 'success', text: 'Enlace agregado' })
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 2500)
+  }
+
+  const removeCustomLink = (dirPath: string, id: string) => {
+    const ok = (typeof window !== 'undefined') ? window.confirm('¿Eliminar este enlace?') : true
+    if (!ok) return
+    const next = { ...customLinks }
+    next[dirPath || ''] = (next[dirPath || ''] || []).filter(l => l.id !== id)
+    if (!next[dirPath || '']?.length) delete next[dirPath || '']
+    persistCustomLinks(next)
+  }
 
   // const formatHM = (sec: number) => {
   //   const h = Math.floor(sec / 3600)
@@ -627,7 +666,7 @@ export default function Home() {
     })
 
     setDirectoryTree(Object.fromEntries(map))
-  }, [dirFiles])
+  }, [dirFiles, customLinks])
 
   // compute queue from all pdfs
   useEffect(() => {
@@ -650,6 +689,25 @@ export default function Home() {
         setQueueIndex(0)
       }
     }
+
+    // Inject custom links per directory
+    try {
+      Object.entries(customLinks).forEach(([dirPath, links]) => {
+        const entry = ensureDir(dirPath)
+        links.forEach((l) => {
+          const faux = new File([], l.name || 'Enlace', { type: 'text/plain' })
+          entry.files.push({
+            file: faux,
+            path: `${dirPath ? dirPath + '/' : ''}${l.id}`,
+            week: dirPath,
+            subject: '',
+            tableType: 'theory',
+            isPdf: false,
+            url: l.url,
+          })
+        })
+      })
+    } catch {}
   }, [directoryTree, completed, currentPdf])
 
   useEffect(() => {
@@ -1034,6 +1092,9 @@ export default function Home() {
             </div>
           )}
           <h2 className="text-xl">{formatBreadcrumb(viewWeek)}</h2>
+          <div className="mt-2">
+            <button className="underline" onClick={() => addCustomLink(viewWeek || '')}>Agregar URL</button>
+          </div>
           {childDirectories.length > 0 && (
             <ul className="space-y-1">
               {childDirectories.map((dir) => (
@@ -1067,6 +1128,18 @@ export default function Home() {
                     >
                       {p.file.name}
                     </span>
+                    {!p.isPdf && (
+                      <button
+                        className="text-red-600 text-xs underline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const id = (p.path.split('/')?.pop() || '')
+                          removeCustomLink(currentDirEntry.path, id)
+                        }}
+                      >
+                        Eliminar
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
