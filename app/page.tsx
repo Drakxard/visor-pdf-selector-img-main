@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 
-const days = ["Lunes", "Martes", "MiÃ©rcoles", "Jueves", "Viernes"]
+const days = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
 
 type PdfFile = {
   file: File
@@ -859,11 +859,11 @@ export default function Home() {
 
   const daysUntil = (pdf: PdfFile) => {
     const dayMap: Record<string, number> = {
-      Lunes: 1,
-      Martes: 2,
-      MiÃ©rcoles: 3,
-      Jueves: 4,
-      Viernes: 5,
+      'Lunes': 1,
+      'Martes': 2,
+      'Miércoles': 3,
+      'Jueves': 4,
+      'Viernes': 5,
     }
     const today = new Date().getDay()
     const dayName =
@@ -1299,4 +1299,7 @@ export default function Home() {
   </>
   )
 }
+
+
+
 
