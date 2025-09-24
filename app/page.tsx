@@ -1,9 +1,9 @@
-"use client"
+Ôªø"use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useTheme } from "next-themes"
 
-const days = ["Lunes", "Martes", "MiÈrcoles", "Jueves", "Viernes"]
+const days = ["Lunes", "Martes", "Mi√©rcoles", "Jueves", "Viernes"]
 
 type PdfFile = {
   file: File
@@ -85,7 +85,7 @@ const readAllFiles = async (
       }
     }
     estimatedTotal = total
-    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivosÖ' })
+    onProgress?.({ processed, total: estimatedTotal, current: 'Contando archivos‚Ä¶' })
   } catch {}
 
   const traverse = async (
@@ -200,7 +200,7 @@ export default function Home() {
   }
 
   const removeCustomLink = (dirPath: string, id: string) => {
-    const ok = (typeof window !== 'undefined') ? window.confirm('øEliminar este enlace?') : true
+    const ok = (typeof window !== 'undefined') ? window.confirm('¬øEliminar este enlace?') : true
     if (!ok) return
     const next = { ...customLinks }
     next[dirPath || ''] = (next[dirPath || ''] || []).filter(l => l.id !== id)
@@ -428,7 +428,7 @@ export default function Home() {
       const handle = await (window as any).showDirectoryPicker({ mode: 'read' })
       console.log("[selectDirectory] handle obtained", handle)
       await saveHandle(handle)
-      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'PreparandoÖ' })
+      setLoadingInfo({ active: true, processed: 0, total: undefined, current: 'Preparando‚Ä¶' })
       const rawFiles = await readAllFiles(handle, (i) => setLoadingInfo(prev => ({ active: true, ...i })))
       console.log("[selectDirectory] read files", { count: rawFiles.length })
       const files = filterSystemFiles(rawFiles)
@@ -888,7 +888,7 @@ export default function Home() {
               Paso 1: Selecciona la carpeta "gestor" ({isMobile ? 'toca para abrir' : 'Enter para abrir'})
             </p>
             <button onClick={selectDirectory}>Cargar carpeta</button>
-            {/* Hidden file input fallback (montado durante paso 0 para mÛviles) */}
+            {/* Hidden file input fallback (montado durante paso 0 para m√≥viles) */}
             <input
               ref={fileInputRef}
               type="file"
@@ -925,7 +925,7 @@ export default function Home() {
       case 1: {
         return (
           <main className="min-h-screen flex items-center justify-center p-4">
-            <p>Buscando configuraciÛn previa...</p>
+            <p>Buscando configuraci√≥n previa...</p>
           </main>
         )
       }
@@ -936,7 +936,7 @@ export default function Home() {
     const dayMap: Record<string, number> = {
       'Lunes': 1,
       'Martes': 2,
-      'MiÈrcoles': 3,
+      'Mi√©rcoles': 3,
       'Jueves': 4,
       'Viernes': 5,
     }
@@ -1153,7 +1153,7 @@ export default function Home() {
           )}
           {childDirectories.length === 0 && selectedFiles.length === 0 && (
 
-            <p className="text-sm text-gray-500">Carpeta vacÌa</p>
+            <p className="text-sm text-gray-500">Carpeta vac√≠a</p>
           )}
 
           {childDirectories.length === 0 && (
@@ -1172,7 +1172,7 @@ export default function Home() {
         <div className="fixed inset-x-0 bottom-0 z-50 p-3">
           <div className="mx-auto max-w-md rounded bg-gray-900/90 text-white dark:bg-gray-800/90 px-3 py-2 text-sm">
             <div className="flex items-center justify-between">
-              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}Ö</span>
+              <span>Cargando {loadingInfo.processed}{loadingInfo.total ? ` / ${loadingInfo.total}` : ''}‚Ä¶</span>
               <span className="opacity-80">{loadingInfo.current || ''}</span>
             </div>
             <div className="h-1 bg-gray-700 mt-2 rounded">
@@ -1242,9 +1242,9 @@ export default function Home() {
                 <span>PDF</span>
                 <span
                   className="truncate"
-                  title={currentPdf ? currentPdf.file.name : 'Sin selecciÛn'}
+                  title={currentPdf ? currentPdf.file.name : 'Sin selecci√≥n'}
                 >
-                  {currentPdf ? currentPdf.file.name : 'Sin selecciÛn'}
+                  {currentPdf ? currentPdf.file.name : 'Sin selecci√≥n'}
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1277,7 +1277,7 @@ export default function Home() {
                 )}
                 {currentPdf?.isPdf && pdfUrl && (
                   <button onClick={() => { try { window.open(pdfUrl, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-                    Nueva pestaÒa
+                    Nueva pesta√±a
                   </button>
                 )}
               </div>
@@ -1286,7 +1286,7 @@ export default function Home() {
             {isMobile ? (
               currentPdf?.isPdf && pdfUrl ? (
                 <div className="w-full h-full flex items-center justify-center p-4 text-sm text-gray-500">
-                  En mÛvil, el PDF se abre en nueva pestaÒa.
+                  En m√≥vil, el PDF se abre en nueva pesta√±a.
                 </div>
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-sm text-gray-500">
@@ -1302,7 +1302,7 @@ export default function Home() {
                     '*',
                   )
                 }
-                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'PrevisualizaciÛn'}
+                title={viewerOpen ? (currentPdf.isPdf ? 'Visor PDF' : 'Visor') : 'Previsualizaci√≥n'}
                 src={
                   currentPdf.isPdf
                     ? `/visor/index.html?url=${encodeURIComponent(pdfUrl!)}&name=${encodeURIComponent(
@@ -1335,13 +1335,13 @@ export default function Home() {
       </div>
     )}
     <div className="fixed top-2 right-2">
-      <button onClick={() => setShowSettings(!showSettings)}>‚öôÔ∏è</button>
+      <button onClick={() => setShowSettings(!showSettings)}>√¢≈°‚Ñ¢√Ø¬∏¬è</button>
       {showSettings && (
         <div className="absolute right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 space-y-2 text-sm text-gray-800 dark:text-gray-200">
           <button className="block w-full text-left" onClick={selectDirectory}>Reseleccionar carpeta</button>
           {currentPdf?.isPdf && pdfUrl && (
             <button className="block w-full text-left" onClick={() => { try { window.open(pdfUrl!, '_blank', 'noopener,noreferrer') } catch (e) { console.warn('window.open failed', e) } }}>
-              Abrir PDF en nueva pestaÒa
+              Abrir PDF en nueva pesta√±a
             </button>
           )}
           <button className="block w-full text-left" onClick={() => setShowDarkModal(true)}>Configurar modo oscuro</button>
@@ -1360,7 +1360,7 @@ export default function Home() {
         try {
           const files = Array.from((e.target as HTMLInputElement).files || [])
           if (!files.length) return
-          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'ProcesandoÖ' })
+          setLoadingInfo({ active: true, processed: 0, total: files.length, current: 'Procesando‚Ä¶' })
           const enhanced = files.map((f) => {
             const rp = (f as any).webkitRelativePath || ''
             if (!rp || rp.indexOf('/') < 0) {
@@ -1416,7 +1416,7 @@ export default function Home() {
             </div>
             <div className="relative w-full">
               <div className="absolute w-full flex justify-center -top-5 pointer-events-none">
-                <span>‚Üì</span>
+                <span>√¢‚Ä†‚Äú</span>
               </div>
               <input
                 type="range"
@@ -1439,6 +1439,7 @@ export default function Home() {
   </>
   )
 }
+
 
 
 
