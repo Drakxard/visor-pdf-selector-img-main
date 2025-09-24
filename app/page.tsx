@@ -121,6 +121,7 @@ export default function Home() {
   // )
   const viewerRef = useRef<HTMLIFrameElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const selectingRef = useRef(false)
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const toastTimerRef = useRef<number | null>(null)
   // const autoPausedRef = useRef(false)
@@ -331,6 +332,8 @@ export default function Home() {
   }
 
   const selectDirectory = async () => {
+    if (selectingRef.current) return
+    selectingRef.current = true
     try {
       if (!("showDirectoryPicker" in window)) {
         console.warn("[fallback] Directory picker not available, using folder input (webkitdirectory)")
@@ -365,6 +368,9 @@ export default function Home() {
         try { fileInputRef.current.click() } catch {}
       }
     }
+    finally {
+      selectingRef.current = false
+    }
   }
 
   useEffect(() => {
@@ -396,8 +402,8 @@ export default function Home() {
       let onTap: any | null = null
       if (isMobile) {
         onTap = () => selectDirectory()
-        window.addEventListener("click", onTap)
-        window.addEventListener("touchend", onTap, { passive: true as any })
+        window.addEventListener("click", onTap, { once: true } as any)
+        window.addEventListener("touchend", onTap as any, { passive: true, once: true } as any)
       }
       return () => {
         window.removeEventListener("keydown", onKey)
@@ -760,7 +766,10 @@ export default function Home() {
                   const files = Array.from((e.target as HTMLInputElement).files || [])
                   if (!files.length) return
                   const enhanced = files.map((f) => {
-                    try { Object.defineProperty(f, 'webkitRelativePath', { value: f.name }) } catch {}
+                    const rp = (f as any).webkitRelativePath || ''
+                    if (!rp || rp.indexOf('/') < 0) {
+                      try { Object.defineProperty(f, 'webkitRelativePath', { value: `gestor/${f.name}` }) } catch {}
+                    }
                     return f
                   })
                   setNames([])
@@ -1137,7 +1146,10 @@ export default function Home() {
           const files = Array.from((e.target as HTMLInputElement).files || [])
           if (!files.length) return
           const enhanced = files.map((f) => {
-            try { Object.defineProperty(f, 'webkitRelativePath', { value: f.name }) } catch {}
+            const rp = (f as any).webkitRelativePath || ''
+            if (!rp || rp.indexOf('/') < 0) {
+              try { Object.defineProperty(f, 'webkitRelativePath', { value: `gestor/${f.name}` }) } catch {}
+            }
             return f
           })
           setNames([])
