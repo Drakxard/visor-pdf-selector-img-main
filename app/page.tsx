@@ -1152,7 +1152,6 @@ export default function Home() {
             </div>
           )}
           {childDirectories.length === 0 && selectedFiles.length === 0 && (
-
             <p className="text-sm text-gray-500">Carpeta vacía</p>
           )}
 
@@ -1162,9 +1161,8 @@ export default function Home() {
             </div>
           )}
 
-       <section
-          className={`flex flex-col flex-1 md:h-screen ${viewerOpen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900' : ''}`}
-        >
+          </aside>
+          <section className={`flex flex-col flex-1 md:h-screen ${viewerOpen ? 'fixed inset-0 z-50 bg-white dark:bg-gray-900' : ''}`}>
           {viewerOpen ? (
             !pdfFullscreen && (
               <div className="flex flex-wrap items-center justify-between p-2 border-b gap-2">
@@ -1439,6 +1437,8 @@ export default function Home() {
   </>
   )
 }
+
+
 
 
 
