@@ -369,16 +369,30 @@ export default function Home() {
     }
   }, [step, configFound])
 
-  // allow opening folder selector with Enter on initial screen
+  // allow opening folder selector on initial screen
+  // - Desktop: press Enter
+  // - Mobile: tap anywhere (click/touch)
   useEffect(() => {
     if (!setupComplete && step === 0) {
-      const handler = (e: KeyboardEvent) => {
+      const onKey = (e: KeyboardEvent) => {
         if (e.key === "Enter") selectDirectory()
       }
-      window.addEventListener("keydown", handler)
-      return () => window.removeEventListener("keydown", handler)
+      window.addEventListener("keydown", onKey)
+      let onTap: any | null = null
+      if (isMobile) {
+        onTap = () => selectDirectory()
+        window.addEventListener("click", onTap)
+        window.addEventListener("touchend", onTap, { passive: true as any })
+      }
+      return () => {
+        window.removeEventListener("keydown", onKey)
+        if (onTap) {
+          window.removeEventListener("click", onTap)
+          window.removeEventListener("touchend", onTap as any)
+        }
+      }
     }
-  }, [setupComplete, step])
+  }, [setupComplete, step, isMobile])
 
   // theme and setup flag + device detection
   useEffect(() => {
@@ -715,7 +729,9 @@ export default function Home() {
         return (
           <main className="min-h-screen flex flex-col items-center justify-center gap-4 p-4">
             <h1 className="text-xl">Comencemos a configurar el entorno</h1>
-            <p>Paso 1: Selecciona la carpeta "gestor" (Enter para abrir)</p>
+            <p>
+              Paso 1: Selecciona la carpeta "gestor" ({isMobile ? 'toca para abrir' : 'Enter para abrir'})
+            </p>
             <button onClick={selectDirectory}>Cargar carpeta</button>
           </main>
         )
