@@ -695,23 +695,33 @@ export default function Home() {
       return
     }
     if (currentPdf.isPdf) {
-      let fileForBlob: File | null = currentPdf.file || null
-      // Lazy-load real File if we only indexed a stub (size 0) and have a handle attached
-      if (fileForBlob && fileForBlob.size === 0) {
-        const h = (fileForBlob as any).___handle
-        if (h && typeof h.getFile === 'function') {
-          try { fileForBlob = await h.getFile() } catch {}
+      let active = true
+      let revoke: (() => void) | null = null
+      ;(async () => {
+        let fileForBlob: File | null = currentPdf.file || null
+        // Lazy-load real File if we only indexed a stub (size 0) and have a handle attached
+        try {
+          if (fileForBlob && fileForBlob.size === 0) {
+            const h = (fileForBlob as any).___handle
+            if (h && typeof h.getFile === 'function') {
+              fileForBlob = await h.getFile()
+            }
+          }
+        } catch {}
+        try {
+          const url = URL.createObjectURL(fileForBlob || currentPdf.file)
+          if (!active) {
+            URL.revokeObjectURL(url)
+            return
+          }
+          setPdfUrl(url)
+          setEmbedUrl(null)
+          revoke = () => URL.revokeObjectURL(url)
+        } catch {
+          setPdfUrl(null)
         }
-      }
-      try {
-        const url = URL.createObjectURL(fileForBlob || currentPdf.file)
-        setPdfUrl(url)
-        setEmbedUrl(null)
-        return () => URL.revokeObjectURL(url)
-      } catch {
-        setPdfUrl(null)
-      }
-      return
+      })()
+      return () => { active = false; if (revoke) revoke() }
     }
     if (currentPdf.url) {
       setPdfUrl(null)
@@ -1299,6 +1309,7 @@ export default function Home() {
   </>
   )
 }
+
 
 
 
